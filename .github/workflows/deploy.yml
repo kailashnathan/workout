@@ -18,13 +18,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # Both values are public by design, so either a repo secret or a repo variable works.
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Check Supabase secrets
         run: |
           if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "::error::Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY under Settings > Secrets and variables > Actions > Repository secrets"
+            echo "::error::Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY under Settings > Secrets and variables > Actions (repository secrets or variables)"
             exit 1
           fi
       - uses: actions/checkout@v4
