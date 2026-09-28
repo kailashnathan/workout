@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fmt, MODE_COLOR, MODE_LABEL, resolveSegment, totalSec } from '../lib/pace'
+import { fmt, MODE_COLOR, resolveSegment, segmentLabel, totalSec } from '../lib/pace'
 import type { Segment, Settings } from '../lib/types'
 
 export function Strip({ segments, progressSec }: { segments: Segment[]; progressSec?: number }) {
@@ -18,16 +18,19 @@ export function Strip({ segments, progressSec }: { segments: Segment[]; progress
 
 export function SegmentList({ segments, settings }: { segments: Segment[]; settings: Settings }) {
   return (
-    <ol className="divide-y divide-zinc-800 text-sm">
+    <ol className="text-sm">
       {segments.map((s, i) => {
         const r = resolveSegment(s, settings)
+        const newBlock = s.block && s.block !== segments[i - 1]?.block
         return (
-          <li key={i} className="flex items-center gap-3 py-1.5">
-            <span className={`h-3 w-3 rounded-full ${MODE_COLOR[s.mode]}`} />
-            <span className="w-16 font-medium">{MODE_LABEL[s.mode]}</span>
-            <span className="w-12 tabular-nums text-zinc-400">{fmt(s.sec)}</span>
-            <span className="w-20 tabular-nums">{r.mph.toFixed(1)} mph</span>
-            <span className="tabular-nums">{r.incline}%</span>
+          <li key={i}>
+            {newBlock && <p className="label mt-3 mb-1">{s.block}</p>}
+            <div className="flex items-center gap-3 border-t border-zinc-800 py-1.5">
+              <span className={`h-3 w-3 shrink-0 rounded-full ${MODE_COLOR[s.mode]}`} />
+              <span className="w-24 font-medium">{segmentLabel(s)}</span>
+              <span className="w-10 tabular-nums text-zinc-400">{fmt(s.sec)}</span>
+              <span className="text-zinc-300">{s.note || `${r.mph.toFixed(1)} mph · ${r.incline}%`}</span>
+            </div>
           </li>
         )
       })}

@@ -6,8 +6,9 @@ import { finishSession } from '../lib/api'
 import { useCatalog } from '../lib/catalog'
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft'
 import { estimateDistance, fmt } from '../lib/pace'
+import { lb, liftTotals } from '../lib/plan'
 import type { Draft, TimerState } from '../lib/types'
-import { beep, useTimer } from '../lib/useTimer'
+import { changeBeep, useTimer } from '../lib/useTimer'
 
 const STEPS = ['Tread', 'Stair', 'Strength', 'Stretch', 'Finish'] as const
 type Step = (typeof STEPS)[number]
@@ -60,7 +61,9 @@ export default function Workout() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-10 bg-zinc-950/95 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2">
+      <header
+        className={`sticky top-0 z-10 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2 ${step === 'Tread' ? 'bg-transparent' : 'bg-zinc-950/95'}`}
+      >
         <div className="mb-2 flex items-center justify-between">
           <button className="text-sm text-zinc-400" onClick={() => navigate('/')}>
             ← Home
@@ -72,7 +75,9 @@ export default function Workout() {
             <button
               key={s}
               onClick={() => setStep(s)}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium ${s === step ? 'bg-orange-500 text-white' : 'bg-zinc-900 text-zinc-400'}`}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium ${
+                s === step ? 'bg-orange-500 text-white' : step === 'Tread' ? 'bg-white/10 text-white/70' : 'bg-zinc-900 text-zinc-400'
+              }`}
             >
               {s}
             </button>
@@ -82,10 +87,16 @@ export default function Workout() {
 
       <main className="flex-1 space-y-4 p-4">
         {step === 'Tread' && (
-          <>
-            <h2 className="text-xl font-bold">{draft.treadmillName}</h2>
-            <IntervalTimer segments={draft.segments} settings={catalog.settings} timer={draft.treadTimer} onTimer={onTreadTimer} />
-          </>
+          <IntervalTimer
+            name={draft.treadmillName}
+            description={draft.treadmillDescription}
+            segments={draft.segments}
+            settings={catalog.settings}
+            timer={draft.treadTimer}
+            onTimer={onTreadTimer}
+            onNext={() => setStep(steps[1])}
+            nextLabel={steps[1] === 'Stair' ? 'Stairmaster' : steps[1]}
+          />
         )}
 
         {step === 'Stair' && (
@@ -122,8 +133,8 @@ export default function Workout() {
             <div className="card space-y-1 text-zinc-300">
               <p>Treadmill: {fmt(draft.treadTimer.elapsedMs / 1000)}</p>
               <p>Stair: {draft.stair.minutes || '–'} min</p>
-              <p>Sets done: {draft.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0)}</p>
             </div>
+            {draft.exercises.length > 0 && <StrengthSummary draft={draft} update={update} />}
             <label className="block space-y-1">
               <span className="label">Treadmill distance (mi)</span>
               <input
@@ -155,7 +166,7 @@ export default function Workout() {
         )}
       </main>
 
-      {step !== 'Finish' && (
+      {step !== 'Finish' && step !== 'Tread' && (
         <footer className="p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
           <button className="btn w-full" onClick={() => setStep(steps[stepIdx + 1])}>
             Next: {steps[stepIdx + 1]} →
@@ -176,7 +187,7 @@ function StairStep({ draft, targetMin, update, onTimer }: StairProps) {
   useEffect(() => {
     if (running && targetSec > 0 && elapsedSec >= targetSec && !beeped.current) {
       beeped.current = true
-      beep(1320, 800)
+      changeBeep()
     }
   }, [running, elapsedSec, targetSec])
 
@@ -225,6 +236,40 @@ function StairStep({ draft, targetMin, update, onTimer }: StairProps) {
           </label>
         ))}
       </div>
+    </div>
+  )
+}
+
+function StrengthSummary({ draft, update }: { draft: Draft; update: (p: Partial<Draft>) => void }) {
+  const unticked = draft.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0)
+  const all = liftTotals(draft.exercises.flatMap((e) => e.sets.filter((s) => s.done)))
+
+  return (
+    <div className="card space-y-2">
+      <p className="label">Strength</p>
+      {draft.exercises.map((e) => {
+        const t = liftTotals(e.sets.filter((s) => s.done))
+        return (
+          <div key={e.exerciseId} className="flex justify-between gap-2 text-sm">
+            <span>{e.name}</span>
+            <span className="text-right text-zinc-400 tabular-nums">
+              {t.sets === 0 ? 'no sets' : `${t.sets} set${t.sets > 1 ? 's' : ''}${t.volume > 0 ? ` · top ${lb(t.top)} · ${lb(t.volume)}` : ''}`}
+            </span>
+          </div>
+        )
+      })}
+      {all.volume > 0 && <p className="border-t border-zinc-800 pt-2 text-sm font-semibold">Total lifted: {lb(all.volume)}</p>}
+      {unticked > 0 && (
+        <div className="rounded-xl bg-amber-500/15 p-3 text-sm text-amber-200">
+          {unticked} set{unticked > 1 ? 's' : ''} not ticked ✓ won't be saved.
+          <button
+            className="mt-2 block font-semibold text-amber-100 underline"
+            onClick={() => update({ exercises: draft.exercises.map((e) => ({ ...e, sets: e.sets.map((s) => ({ ...s, done: true })) })) })}
+          >
+            Mark all sets done
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -27,6 +27,16 @@ export function prefillSets(ex: Exercise, last: SetLog[] | undefined): DraftSet[
   return Array.from({ length: ex.default_sets }, () => ({ reps: ex.default_reps, weight: 0, done: false }))
 }
 
+export function liftTotals(sets: { reps: number; weight: number }[]) {
+  return {
+    sets: sets.length,
+    top: sets.length ? Math.max(...sets.map((s) => s.weight)) : 0,
+    volume: sets.reduce((t, s) => t + s.reps * s.weight, 0),
+  }
+}
+
+export const lb = (n: number) => `${n.toLocaleString()} lb`
+
 export function summarizeSets(sets: { reps: number; weight: number }[]): string {
   if (!sets.length) return ''
   const top = Math.max(...sets.map((s) => s.weight))

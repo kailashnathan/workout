@@ -45,6 +45,7 @@ export default function Today() {
       dayIndex: day!.index,
       treadmillTemplateId: tread!.item.id,
       treadmillName: tread!.item.name,
+      treadmillDescription: tread!.item.description,
       treadmillIndex: tread!.index,
       segments: tread!.item.segments,
       treadTimer: { runningSince: null, elapsedMs: 0 },

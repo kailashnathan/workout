@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { TimerState } from './types'
 
-export const elapsedMs = (t: TimerState, now = Date.now()) => t.elapsedMs + (t.runningSince ? now - t.runningSince : 0)
+// Clamped: the last UI tick can be slightly older than a just-set runningSince (e.g. right after Skip).
+export const elapsedMs = (t: TimerState, now = Date.now()) =>
+  t.elapsedMs + (t.runningSince ? Math.max(0, now - t.runningSince) : 0)
 
 // Timestamp-based so it survives screen lock, tab switches and reloads.
 export function useTimer(state: TimerState, setState: (t: TimerState) => void) {
@@ -38,18 +40,26 @@ export function useTimer(state: TimerState, setState: (t: TimerState) => void) {
 }
 
 let audio: AudioContext | null = null
-export function beep(freq = 880, ms = 150) {
+export function beep(freq = 880, ms = 150, vol = 0.3) {
   try {
     audio ??= new AudioContext()
     const osc = audio.createOscillator()
     const gain = audio.createGain()
     osc.frequency.value = freq
-    gain.gain.value = 0.2
+    gain.gain.value = vol
     osc.connect(gain).connect(audio.destination)
     osc.start()
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + ms / 1000)
     osc.stop(audio.currentTime + ms / 1000)
   } catch {
     // audio unavailable
   }
   navigator.vibrate?.(ms)
+}
+
+export const countdownBeep = () => beep(440, 80, 0.2)
+
+export function changeBeep() {
+  beep(660, 200)
+  setTimeout(() => beep(880, 250), 200)
 }

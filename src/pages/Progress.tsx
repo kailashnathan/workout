@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { listSessions } from '../lib/api'
+import { liftTotals } from '../lib/plan'
 import type { Session } from '../lib/types'
 
 const MARK = '#ea580c'
@@ -24,6 +25,7 @@ export default function Progress() {
   const [sessions, setSessions] = useState<Session[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [exercise, setExercise] = useState<string>('Leg Press')
+  const [metric, setMetric] = useState<'top' | 'volume'>('top')
 
   useEffect(() => {
     listSessions()
@@ -48,10 +50,13 @@ export default function Progress() {
     .map((s) => {
       const logs = s.set_logs.filter((l) => l.exercise_name === exercise)
       if (!logs.length) return null
-      return { date: shortDate(s.started_at), weight: Math.max(...logs.map((l) => Number(l.weight))), reps: Math.max(...logs.map((l) => l.reps)) }
+      const t = liftTotals(logs.map((l) => ({ reps: l.reps, weight: Number(l.weight) })))
+      return { date: shortDate(s.started_at), weight: t.top, volume: t.volume, reps: Math.max(...logs.map((l) => l.reps)) }
     })
     .filter((d) => d !== null)
   const liftIsWeighted = liftData.some((d) => d.weight > 0)
+  const liftKey = !liftIsWeighted ? 'reps' : metric === 'top' ? 'weight' : 'volume'
+  const liftTitle = { reps: 'Best reps', weight: 'Top set weight (lb)', volume: 'Total lifted (lb)' }[liftKey]
 
   const treadData = sessions
     .map((s) => ({ date: shortDate(s.started_at), miles: cardio(s, 'treadmill')?.distance_mi }))
@@ -76,7 +81,7 @@ export default function Progress() {
         <>
           <section className="card space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold">{liftIsWeighted ? 'Top set weight (lb)' : 'Best reps'}</h2>
+              <h2 className="font-semibold">{liftTitle}</h2>
               <select className="rounded-lg bg-zinc-800 px-2 py-1 text-sm" value={exercise} onChange={(e) => setExercise(e.target.value)}>
                 {!exerciseNames.includes(exercise) && <option>{exercise}</option>}
                 {exerciseNames.map((n) => (
@@ -84,6 +89,24 @@ export default function Progress() {
                 ))}
               </select>
             </div>
+            {liftIsWeighted && (
+              <div className="flex gap-1 text-sm">
+                {(
+                  [
+                    ['top', 'Top set'],
+                    ['volume', 'Total lb'],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => setMetric(k)}
+                    className={`rounded-lg px-3 py-1 ${metric === k ? 'bg-zinc-700 text-white' : 'text-zinc-400'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {liftData.length ? (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={liftData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -93,8 +116,8 @@ export default function Progress() {
                   <Tooltip {...TOOLTIP} />
                   <Line
                     type="monotone"
-                    dataKey={liftIsWeighted ? 'weight' : 'reps'}
-                    name={liftIsWeighted ? 'lb' : 'reps'}
+                    dataKey={liftKey}
+                    name={liftKey === 'reps' ? 'reps' : 'lb'}
                     stroke={MARK}
                     strokeWidth={2}
                     dot={{ r: 4, fill: MARK, stroke: '#18181b', strokeWidth: 2 }}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { latestSetsByExercise, pick, prefillSets, summarizeSets } from './plan'
+import { latestSetsByExercise, liftTotals, pick, prefillSets, summarizeSets } from './plan'
 import type { Exercise, SetLog } from './types'
 
 describe('pick', () => {
@@ -54,4 +54,9 @@ describe('prefillSets', () => {
 it('summarizeSets shows sets×reps @ top weight', () => {
   expect(summarizeSets([{ reps: 12, weight: 180 }, { reps: 12, weight: 190 }])).toBe('2×12 @ 190 lb')
   expect(summarizeSets([{ reps: 30, weight: 0 }])).toBe('1×30')
+})
+
+it('liftTotals gives sets, top weight and total volume', () => {
+  expect(liftTotals([{ reps: 12, weight: 180 }, { reps: 10, weight: 190 }])).toEqual({ sets: 2, top: 190, volume: 4060 })
+  expect(liftTotals([])).toEqual({ sets: 0, top: 0, volume: 0 })
 })

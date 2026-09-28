@@ -1,6 +1,13 @@
 export type Mode = 'walk' | 'base' | 'push' | 'allout'
 
-export type Segment = { sec: number; mode: Mode; incline: number }
+export type Segment = {
+  sec: number
+  mode: Mode
+  incline: number
+  block?: string
+  label?: string
+  note?: string
+}
 
 export type Settings = {
   base_mph: number
@@ -86,6 +93,7 @@ export type Draft = {
   dayIndex: number
   treadmillTemplateId: number
   treadmillName: string
+  treadmillDescription?: string | null
   treadmillIndex: number
   segments: Segment[]
   treadTimer: TimerState

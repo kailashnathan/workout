@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estimateDistance, fmt, resolveSegment, segmentAt, segmentStart, totalSec } from './pace'
+import { blockInfo, estimateDistance, fmt, resolveSegment, segmentAt, segmentLabel, segmentStart, totalSec } from './pace'
 import type { Segment } from './types'
 
 const s = { base_mph: 5, push_mph: 6, allout_mph: 7.5, walk_mph: 3, walker_mph: 3.5, walker_mode: false }
@@ -57,4 +57,26 @@ it('fmt formats mm:ss', () => {
   expect(fmt(0)).toBe('0:00')
   expect(fmt(59.2)).toBe('1:00')
   expect(fmt(125)).toBe('2:05')
+})
+
+describe('blockInfo', () => {
+  const blocks: Segment[] = [
+    { sec: 120, mode: 'push', incline: 5, block: 'Block 1' },
+    { sec: 60, mode: 'allout', incline: 10, block: 'Block 1' },
+    { sec: 60, mode: 'walk', incline: 1, block: 'Recovery', label: 'Recovery' },
+    { sec: 30, mode: 'push', incline: 8, block: 'Block 2' },
+    { sec: 45, mode: 'base', incline: 1 },
+  ]
+  it('sums only the consecutive segments of the same block', () => {
+    expect(blockInfo(blocks, 1)).toEqual({ name: 'Block 1', sec: 180 })
+    expect(blockInfo(blocks, 2)).toEqual({ name: 'Recovery', sec: 60 })
+    expect(blockInfo(blocks, 3)).toEqual({ name: 'Block 2', sec: 30 })
+  })
+  it('returns null for segments without a block', () => {
+    expect(blockInfo(blocks, 4)).toBeNull()
+  })
+  it('segmentLabel prefers the custom label', () => {
+    expect(segmentLabel(blocks[2])).toBe('Recovery')
+    expect(segmentLabel(blocks[1])).toBe('All Out')
+  })
 })

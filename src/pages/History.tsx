@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { deleteSession, listSessions, saveSessionEdits } from '../lib/api'
-import { summarizeSets } from '../lib/plan'
+import { lb, liftTotals, summarizeSets } from '../lib/plan'
 import type { Session } from '../lib/types'
 
 export default function History() {
@@ -43,6 +43,7 @@ export default function History() {
             <p className="text-sm text-zinc-400">
               {s.treadmill_name}
               {cardioSummary(s)}
+              {volumeOf(s.set_logs) > 0 && ` · ${lb(volumeOf(s.set_logs))} lifted`}
             </p>
           </button>
         ),
@@ -50,6 +51,8 @@ export default function History() {
     </div>
   )
 }
+
+const volumeOf = (logs: Session['set_logs']) => liftTotals(logs.map((l) => ({ reps: l.reps, weight: Number(l.weight) }))).volume
 
 function cardioSummary(s: Session) {
   const t = s.cardio_logs.find((c) => c.kind === 'treadmill')
@@ -146,7 +149,8 @@ function SessionEditor({ session, onClose, onSaved }: { session: Session; onClos
             ))
           ) : (
             <p>
-              {summarizeSets(logs.map((l) => ({ reps: l.reps, weight: Number(l.weight) })))}{' '}
+              {summarizeSets(logs.map((l) => ({ reps: l.reps, weight: Number(l.weight) })))}
+              {volumeOf(logs) > 0 && ` · ${lb(volumeOf(logs))} total`}{' '}
               <span className="text-zinc-500">({logs.map((l) => `${Number(l.weight)}×${l.reps}`).join(', ')})</span>
             </p>
           )}

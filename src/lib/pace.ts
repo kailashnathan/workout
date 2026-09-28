@@ -44,7 +44,28 @@ export function fmt(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
+// Name and total length of the block a segment belongs to (consecutive segments sharing `block`).
+export function blockInfo(segs: Segment[], index: number): { name: string; sec: number } | null {
+  const name = segs[index]?.block
+  if (!name) return null
+  let start = index
+  while (start > 0 && segs[start - 1].block === name) start--
+  let end = index
+  while (end < segs.length - 1 && segs[end + 1].block === name) end++
+  return { name, sec: totalSec(segs.slice(start, end + 1)) }
+}
+
+export const segmentLabel = (s: Segment) => s.label || MODE_LABEL[s.mode]
+
 export const MODE_LABEL: Record<Mode, string> = { walk: 'Walk', base: 'Base', push: 'Push', allout: 'All Out' }
+
+// Full-screen timer backgrounds
+export const MODE_BG: Record<Mode, string> = {
+  walk: '#0f2e1a',
+  base: '#10151c',
+  push: '#7a2e00',
+  allout: '#8c0f0f',
+}
 
 // OTF-style zone colors
 export const MODE_COLOR: Record<Mode, string> = {

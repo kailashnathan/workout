@@ -364,19 +364,38 @@ function TreadmillEditor({ template, onDone }: { template: Omit<TreadmillTemplat
           <span>Incline %</span>
         </div>
         {t.segments.map((s, i) => (
-          <div key={i} className="grid grid-cols-[1fr_4.5rem_4rem_2rem] items-center gap-1">
-            <select className="input px-2 py-2" value={s.mode} onChange={(e) => setSeg(i, { mode: e.target.value as Mode })}>
-              {MODES.map((m) => (
-                <option key={m} value={m}>
-                  {MODE_LABEL[m]}
-                </option>
+          <div key={i} className="space-y-1 border-b border-zinc-800 pb-2">
+            <div className="grid grid-cols-[1fr_4.5rem_4rem_2rem] items-center gap-1">
+              <select className="input px-2 py-2" value={s.mode} onChange={(e) => setSeg(i, { mode: e.target.value as Mode })}>
+                {MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {MODE_LABEL[m]}
+                  </option>
+                ))}
+              </select>
+              <input className="input px-2 py-2" type="number" inputMode="numeric" value={s.sec} onChange={(e) => setSeg(i, { sec: Number(e.target.value) })} />
+              <input className="input px-2 py-2" type="number" inputMode="decimal" value={s.incline} onChange={(e) => setSeg(i, { incline: Number(e.target.value) })} />
+              <button className="text-zinc-500" onClick={() => setT({ ...t, segments: t.segments.filter((_, j) => j !== i) })}>
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-[6rem_1fr_1fr] gap-1">
+              {(
+                [
+                  ['block', 'Block'],
+                  ['label', 'Label'],
+                  ['note', 'Cue, e.g. PW @ 5%+'],
+                ] as const
+              ).map(([k, placeholder]) => (
+                <input
+                  key={k}
+                  className="input px-2 py-1.5 text-sm"
+                  placeholder={placeholder}
+                  value={s[k] ?? ''}
+                  onChange={(e) => setSeg(i, { [k]: e.target.value || undefined })}
+                />
               ))}
-            </select>
-            <input className="input px-2 py-2" type="number" inputMode="numeric" value={s.sec} onChange={(e) => setSeg(i, { sec: Number(e.target.value) })} />
-            <input className="input px-2 py-2" type="number" inputMode="decimal" value={s.incline} onChange={(e) => setSeg(i, { incline: Number(e.target.value) })} />
-            <button className="text-zinc-500" onClick={() => setT({ ...t, segments: t.segments.filter((_, j) => j !== i) })}>
-              ✕
-            </button>
+            </div>
           </div>
         ))}
         <button className="text-sm text-orange-400" onClick={() => setT({ ...t, segments: [...t.segments, { ...(t.segments.at(-1) ?? { sec: 60, mode: 'base', incline: 1 }) }] })}>
