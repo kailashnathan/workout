@@ -8,9 +8,8 @@ OTF-style workout tracker for the phone: treadmill HIIT intervals, stairmaster, 
    - SQL Editor: paste the **contents** of `supabase/schema.sql` and click Run, then do the same for `supabase/policies.sql`, then `supabase/seed.sql`.
    - Authentication → Users → **Add user**: enter your email + password and tick "Auto confirm".
    - Authentication → Sign In / Providers: turn **off** "Allow new users to sign up".
-   - Project Settings → API: copy the **Project URL** and the **anon / publishable key**.
+   - Project Settings → API: put the **Project URL** and the **anon / publishable key** in `.env.production`. Both are public by design; the login and database policies protect the data. Never use the secret / `service_role` key.
 2. **GitHub**: push this repo to GitHub.
-   - Settings → Secrets and variables → Actions: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
    - Settings → Pages → Source: **GitHub Actions**.
    - Every push to `main` deploys to `https://<you>.github.io/<repo>/`.
 3. **Phone**: open the URL, sign in, then Share → **Add to Home Screen**.
